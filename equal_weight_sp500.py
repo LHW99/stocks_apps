@@ -57,7 +57,9 @@ for symbol_string in symbol_strings:
       ignore_index = True,
     )
 
-portfolio_size = input('Enter the value of your portfolio:')
+#portfolio_size = input('Enter the value of your portfolio:')
+# make 1000000 for testing
+portfolio_size = 1000000
 
 try:
   val = float(portfolio_size)
@@ -71,4 +73,62 @@ for i in range(0, len(final_dataframe.index)):
   # easy accessing rows/columns in pandas
   final_dataframe.loc[i, 'Number of Shares to Buy'] = math.floor(position_size/final_dataframe.loc[i, 'Stock Price'])
 
-print(final_dataframe)
+# using xlsxwriter
+
+writer = pd.ExcelWriter('recommended trades.xlsx', engine = 'xlsxwriter')
+final_dataframe.to_excel(writer, 'Recommended Trades', index = False)
+
+background_color = '#0a0a23'
+font_color = '#ffffff'
+
+# dictionaries for formatting
+string_format = writer.book.add_format(
+  {
+    'font_color': font_color,
+    'bg_color': background_color,
+    'border': 1
+  }
+)
+
+dollar_format = writer.book.add_format(
+  {
+    'num_format': '$0.00',
+    'font_color': font_color,
+    'bg_color': background_color,
+    'border': 1
+  }
+)
+
+integer_format = writer.book.add_format(
+  {
+    "num_format": '0',
+    'font_color': font_color,
+    'bg_color': background_color,
+    'border': 1
+  }
+)
+
+# changing headings
+#writer.sheets['Recommended Trades'].write('A1', 'Ticker', string_format)
+#writer.sheets['Recommended Trades'].write('B1', 'Stock Price', dollar_format)
+#writer.sheets['Recommended Trades'].write('C1', 'Market Capitalization', dollar_format)
+#writer.sheets['Recommended Trades'].write('D1', 'NUmber of Shares to Buy', integer_format)
+
+#writer.sheets['Recommended Trades'].set_column('A:A', 18, string_format)
+#writer.sheets['Recommended Trades'].set_column('B:B', 18, string_format)
+#writer.sheets['Recommended Trades'].set_column('C:C', 18, string_format)
+#writer.sheets['Recommended Trades'].set_column('D:D', 18, string_format)
+#writer.save()
+
+# better way of doing above
+column_formats = {
+  'A': ['Ticker', string_format],
+  'B': ['Stock Price', dollar_format],
+  'C': ['Market Capitalization', dollar_format],
+  'D': ['Number of Shares to buy', integer_format],
+}
+
+for column in column_formats.keys():
+  writer.sheets['Recommended Trades'].set_column(f"{column}:{column}", 18, column_formats[column][1])
+  writer.sheets['Recommended Trades'].write(f"{column}1", column_formats[column][0], column_formats[column][1])
+writer.save()
