@@ -50,4 +50,21 @@ for symbol_string in symbol_strings:
 final_dataframe.sort_values('One-Year Price Return', ascending = False, inplace = True)
 # resets index numbers to go from 0-49
 final_dataframe.reset_index(inplace = True)
+
+def portfolio_input():
+  global portfolio_size
+  portfolio_size = input('Enter the size of your portfolio:')
+
+  try:
+    float(portfolio_size)
+  except ValueError:
+    print('That is not a number. \nPlease try again.')
+    portfolio_size = input('Enter the size of your portfolio:')
+
+portfolio_size = 1000000
+
+position_size = float(portfolio_size)/len(final_dataframe.index)
+for i in range(0, len(final_dataframe)):
+  final_dataframe.loc[i, 'Number of Shares to Buy'] = math.floor(position_size/final_dataframe.loc[i, 'Price'])
+
 print(final_dataframe[:50])
