@@ -50,7 +50,7 @@ for symbol_string in symbol_strings:
 # inplace modifies original dataframe
 final_dataframe.sort_values('One-Year Price Return', ascending = False, inplace = True)
 # resets index numbers to go from 0-49
-final_dataframe.reset_index(inplace = True)
+final_dataframe.reset_index(inplace = True, drop = True)
 
 def portfolio_input():
   global portfolio_size
@@ -133,7 +133,7 @@ for row in hqm_dataframe.index:
     change_col = f'{time_period} Price Return'
     percentile_col = f'{time_period} Return Percentile'
 
-    hqm_dataframe.loc[row, percentile_col] = score(hqm_dataframe[change_col], hqm_dataframe.loc[row, change_col])
+    hqm_dataframe.loc[row, percentile_col] = score(hqm_dataframe[change_col], hqm_dataframe.loc[row, change_col])/100
 
 for row in hqm_dataframe.index:
   momentum_percentiles = []
@@ -141,4 +141,76 @@ for row in hqm_dataframe.index:
     momentum_percentiles.append(hqm_dataframe.loc[row, f'{time_period} Return Percentile'])
   hqm_dataframe.loc[row, 'HQM Score'] = mean(momentum_percentiles)
 
-print(hqm_dataframe['HQM Score'])
+# creating HQM score column
+hqm_dataframe.sort_values('HQM Score', ascending = False, inplace = True)
+hqm_dataframe = hqm_dataframe[:50]
+hqm_dataframe.reset_index(inplace = True, drop = True)
+
+position_size = float(portfolio_size)/len(hqm_dataframe.index)
+for i in hqm_dataframe.index:
+  hqm_dataframe.loc[i, 'Number of Shares to Buy'] = math.floor(position_size/hqm_dataframe.loc[i, 'Price'])
+
+# making excel document
+writer = pd.ExcelWriter('momentum_strategy.xlsx', engine = 'xlsxwriter')
+hqm_dataframe.to_excel(writer, sheet_name = 'Momentum Strategy', index = False)
+
+background_color = '#0a0a23'
+font_color = '#ffffff'
+
+# dictionaries for formatting
+string_format = writer.book.add_format(
+  {
+    'font_color': font_color,
+    'bg_color': background_color,
+    'border': 1
+  }
+)
+
+dollar_format = writer.book.add_format(
+  {
+    'num_format': '$0.00',
+    'font_color': font_color,
+    'bg_color': background_color,
+    'border': 1
+  }
+)
+
+integer_format = writer.book.add_format(
+  {
+    "num_format": '0',
+    'font_color': font_color,
+    'bg_color': background_color,
+    'border': 1
+  }
+)
+
+percent_format = writer.book.add_format(
+  {
+    "num_format": '0.0%',
+    'font_color': font_color,
+    'bg_color': background_color,
+    'border': 1
+  }
+)
+
+# dictionary for excel columns
+column_formats = {
+  'A': ['Ticker', string_format],
+  'B': ['Price', dollar_format],
+  'C': ['Number of Shares to Buy', integer_format],
+  'D': ['One-Year Price Return', percent_format],
+  'E': ['One-Year Return Percentile', percent_format],
+  'F': ['Six-Month Price Return', percent_format],
+  'G': ['Six-Month Return Percentile', percent_format],
+  'H': ['Three-Month Price Return', percent_format],
+  'I': ['Three-Month Return Percentile', percent_format],
+  'J': ['One-Month Price Return', percent_format],
+  'K': ['One-Month Return Percentile', percent_format],
+  'L': ['HQM Score', percent_format]
+}
+
+# formats excel sheet
+for column in column_formats.keys():
+  writer.sheets['Momentum Strategy'].set_column(f'{column}:{column}', 25, column_formats[column][1])
+  writer.sheets['Momentum Strategy'].write(f'{column}1', column_formats[column][0], column_formats[column][1])
+writer.save()
