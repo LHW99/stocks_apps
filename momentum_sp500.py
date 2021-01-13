@@ -2,8 +2,9 @@ import pandas as pd
 import numpy as np
 import requests
 import math
-from scipy import stats
+from scipy.stats import percentileofscore as score
 import xlsxwriter
+from statistics import mean
 
 from secrets import IEX_CLOUD_API_TOKEN
 
@@ -82,6 +83,7 @@ hqm_columns = [
   'Three-Month Return Percentile',
   'One-Month Price Return',
   'One-Month Return Percentile',
+  'HQM Score'
 ]
 
 hqm_dataframe = pd.DataFrame(columns = hqm_columns)
@@ -95,18 +97,48 @@ for symbol_string in symbol_strings:
         [
           symbol,
           data[symbol]['price'],
-          'N/A',
+          0.0,
           data[symbol]['stats']['year1ChangePercent'],
-          'N/A',
+          0.0,
           data[symbol]['stats']['month6ChangePercent'],
-          'N/A',
+          0.0,
           data[symbol]['stats']['month3ChangePercent'],
-          'N/A',
+          0.0,
           data[symbol]['stats']['month1ChangePercent'],
-          'N/A',
+          0.0,
+          0.0,
         ],
         index = hqm_columns),
         ignore_index = True
       )
 
-print(hqm_dataframe)
+time_periods = [
+  'One-Year',
+  'Six-Month',
+  'Three-Month',
+  'One-Month',
+]
+
+# because some price return scores are None
+for row in hqm_dataframe.index:
+  for time_period in time_periods:
+    change_col = f'{time_period} Price Return'
+    percentile_col = f'{time_period} Return Percentile'
+
+    if hqm_dataframe.loc[row, change_col] == None:
+      hqm_dataframe.loc[row, change_col] = 0.0
+
+for row in hqm_dataframe.index:
+  for time_period in time_periods:
+    change_col = f'{time_period} Price Return'
+    percentile_col = f'{time_period} Return Percentile'
+
+    hqm_dataframe.loc[row, percentile_col] = score(hqm_dataframe[change_col], hqm_dataframe.loc[row, change_col])
+
+for row in hqm_dataframe.index:
+  momentum_percentiles = []
+  for time_period in time_periods:
+    momentum_percentiles.append(hqm_dataframe.loc[row, f'{time_period} Return Percentile'])
+  hqm_dataframe.loc[row, 'HQM Score'] = mean(momentum_percentiles)
+
+print(hqm_dataframe['HQM Score'])
