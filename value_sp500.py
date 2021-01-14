@@ -44,4 +44,27 @@ for symbol_string in symbol_strings:
       ignore_index = True
     )
 
-print(final_dataframe)
+# remove glamour stocks
+# sort, remove negative, trim, reset index, drop new index column
+final_dataframe.sort_values('P/E Ratio', inplace = True)
+final_dataframe = final_dataframe[final_dataframe['P/E Ratio'] > 0]
+final_dataframe = final_dataframe[:50]
+final_dataframe.reset_index(inplace = True)
+final_dataframe.drop('index', axis=1, inplace = True)
+
+def portfolio_input():
+  global portfolio_size
+  portfolio_size = input('Enter portfolio size:')
+
+  try: 
+    val = float(portfolio_size)
+  except ValueError:
+    print("That's not a number. \nTry again:")
+    portfolio_size = input('Enter portfolio size:')
+
+portfolio_size = 100000
+
+position_size = float(portfolio_size)/len(final_dataframe.index)
+for row in final_dataframe.index:
+  final_dataframe.loc[row, 'Shares to Buy'] = math.floor(position_size/final_dataframe.loc[row, 'Price'])
+
