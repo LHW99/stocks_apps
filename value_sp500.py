@@ -68,3 +68,25 @@ position_size = float(portfolio_size)/len(final_dataframe.index)
 for row in final_dataframe.index:
   final_dataframe.loc[row, 'Shares to Buy'] = math.floor(position_size/final_dataframe.loc[row, 'Price'])
 
+# making a composite of valuation metrics for more realistic valuation
+symbol = 'AAPL'
+batch_api_call = f'https://sandbox.iexapis.com/stable/stock/market/batch?symbols={symbol}&types=quote,advanced-stats&token={IEX_CLOUD_API_TOKEN}'
+data = requests.get(batch_api_call).json()
+
+#P/E RATIO
+pe_ratio = data[symbol]['quote']['peRatio']
+
+# Price to book ratio
+pb_ratio = data[symbol]['advanced-stats']['priceToBook']
+
+# price to sale ratio
+ps_ratio = data[symbol]['advanced-stats']['priceToSales']
+
+# enterprise value divided by earnings before interest, taxes, depreciation, and amortization
+enterprise_value = data[symbol]['advanced-stats']['enterpriseValue']
+ebitda = data[symbol]['advanced-stats']['EBITDA']
+ev_to_ebitda = enterprise_value/ebitda
+
+# enterprice value divided by gross profit
+gross_profit = data[symbol]['advanced-stats']['grossProfit']
+ev_to_gp = enterprise_value/gross_profit
