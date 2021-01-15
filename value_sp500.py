@@ -70,7 +70,7 @@ for row in final_dataframe.index:
 
 # making a composite of valuation metrics for more realistic valuation
 symbol = 'AAPL'
-batch_api_call = f'https://sandbox.iexapis.com/stable/stock/market/batch?symbols={symbol}&types=quote,advanced-stats&token={IEX_CLOUD_API_TOKEN}'
+batch_api_call = f'https://sandbox.iexapis.com/stable/stock/market/batch?symbols=AAPL&types=quote,advanced-stats&token={IEX_CLOUD_API_TOKEN}'
 data = requests.get(batch_api_call).json()
 
 #P/E RATIO
@@ -90,3 +90,67 @@ ev_to_ebitda = enterprise_value/ebitda
 # enterprice value divided by gross profit
 gross_profit = data[symbol]['advanced-stats']['grossProfit']
 ev_to_gp = enterprise_value/gross_profit
+
+# making robust value
+rv_columns = [
+  'Ticker',
+  'Price',
+  'Shares to Buy',
+  'P/E Ratio',
+  'P/E Percentile',
+  'Price to Book Ratio',
+  'PB Percentile',
+  'Price to Sales Ratio',
+  'PS Percentile',
+  'EV/EBITDA',
+  'EV/EBITDA Percentile',
+  'EV/GP',
+  'EV/GP Percentile',
+  'RV Score',
+]
+
+# making rv dataframe
+rv_dataframe = pd.DataFrame(columns = rv_columns)
+
+for symbol_string in symbol_strings:
+  batch_api_call = f'https://sandbox.iexapis.com/stable/stock/market/batch?symbols={symbol_string}&types=quote,advanced-stats&token={IEX_CLOUD_API_TOKEN}'
+  data = requests.get(batch_api_call).json()
+  for symbol in symbol_string.split(','):
+    enterprise_value = data[symbol]['advanced-stats']['enterpriseValue']
+    ebitda = data[symbol]['advanced-stats']['EBITDA']
+    gross_profit = data[symbol]['advanced-stats']['grossProfit']
+
+    try:
+      ev_to_ebitda = enterprise_value/ebitda
+    except TypeError:
+      ev_to_ebitda = np.NaN
+
+    try:
+      ev_to_gp = enterprise_value/gross_profit
+    except TypeError:
+      ev_to_gp = np.NaN
+
+    rv_dataframe = rv_dataframe.append(
+      pd.Series(
+        [
+          symbol,
+          data[symbol]['quote']['latestPrice'],
+          0.0,
+          data[symbol]['quote']['peRatio'],
+          0.0,
+          data[symbol]['advanced-stats']['priceToBook'],
+          0.0,
+          data[symbol]['advanced-stats']['priceToSales'],
+          0.0,
+          ev_to_ebitda,
+          0.0,
+          ev_to_gp,
+          0.0,
+          0.0,
+        ],
+        index = rv_columns
+      ),
+      ignore_index = True
+    )
+
+print(rv_dataframe)
