@@ -153,4 +153,8 @@ for symbol_string in symbol_strings:
       ignore_index = True
     )
 
-print(rv_dataframe)
+# deal with missing data in dataframe
+for column in ['P/E Ratio', 'Price to Book Ratio', 'Price to Sales Ratio', 'EV/EBITDA', 'EV/GP']:
+  rv_dataframe[column].fillna(rv_dataframe[column].mean(), inplace = True)
+
+rv_dataframe[rv_dataframe.isnull().any(axis=1)]
