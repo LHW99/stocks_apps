@@ -3,6 +3,7 @@ import pandas as pd
 import xlsxwriter
 import requests
 from scipy.stats import percentileofscore as score
+from statistics import mean
 import math
 from secrets import IEX_CLOUD_API_TOKEN
 
@@ -159,6 +160,7 @@ for column in ['P/E Ratio', 'Price to Book Ratio', 'Price to Sales Ratio', 'EV/E
 
 rv_dataframe[rv_dataframe.isnull().any(axis=1)]
 
+# make dictionary of metrics for percentile scores
 metrics = {
   'P/E Ratio': 'P/E Percentile',
   'Price to Book Ratio': 'PB Percentile',
@@ -167,8 +169,23 @@ metrics = {
   'EV/GP': 'EV/GP Percentile',
 }
 
+# calculate percentile scores and modify existing rv_dataframe
 for metric in metrics.keys():
   for row in rv_dataframe.index:
     rv_dataframe.loc[row, metrics[metric]] = score( rv_dataframe[metric], rv_dataframe.loc[row, metric] )
 
-print(rv_dataframe)
+# calculating rv score by taking the mean of all percentile scores
+for row in rv_dataframe.index:
+  value_percentiles = []
+  for metric in metrics.keys():
+    value_percentiles.append(rv_dataframe.loc[row, metrics[metric]])
+  rv_dataframe.loc[row, 'RV Score'] = mean(value_percentiles)
+
+# selecting 50 best value stocks
+rv_dataframe.sort(values('RV Score', ascending = True, inplace = True))
+rv_dataframe = rv_dataframe[:50]
+rv_dataframe.reset_index(drop = True, inplace = True)
+
+
+
+
