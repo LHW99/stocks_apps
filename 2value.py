@@ -99,7 +99,7 @@ metrics = {
 # calculate percentile scores and modify existing rv_dataframe
 for metric in metrics.keys():
   for row in rv_dataframe.index:
-    rv_dataframe.loc[row, metrics[metric]] = score( rv_dataframe[metric], rv_dataframe.loc[row, metric] )
+    rv_dataframe.loc[row, metrics[metric]] = score( rv_dataframe[metric], rv_dataframe.loc[row, metric] )/100
 
 # calculating rv score by taking the mean of all percentile scores
 for row in rv_dataframe.index:
@@ -110,7 +110,7 @@ for row in rv_dataframe.index:
 
 # selecting 50 best value stocks
 rv_dataframe.sort_values('RV Score', ascending = True, inplace = True)
-rv_dataframe = rv_dataframe[:5]
+rv_dataframe = rv_dataframe[:50]
 rv_dataframe.reset_index(drop = True, inplace = True)
 
 # shares to buy
@@ -175,10 +175,10 @@ column_formats = {
   'K': ['EV/EBITDA Percentile', percent_format],
   'L': ['EV/GP', integer_format],
   'M': ['EV/GP Percentile', percent_format],
-  'N': ['RV Score', integer_format],
+  'N': ['RV Score', percent_format],
 }
 
 for column in column_formats.keys():
   writer.sheets['Value Strategy'].set_column(f'{column}:{column}', 25, column_formats[column][1])
   writer.sheets['Value Strategy'].write(f'{column}1', column_formats[column][0], column_formats[column][1])
-#writer.save()
+writer.save()
